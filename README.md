@@ -34,7 +34,7 @@ chatbot-project/
 
 ## 🌐 Live Demo
 
-[Click here to view it live](hhttps://issac-moses-chatbot.netlify.app/)
+[Click here to view it live](https://issac-moses-chatbot.netlify.app/)
 
 ## 📌 Future Improvements
 
