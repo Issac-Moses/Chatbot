@@ -6,10 +6,10 @@ This is a basic web-based chatbot built using **HTML**, **CSS**, and **JavaScrip
 [Click here to view it live](https://issac-moses-chatbot.netlify.app/)
 
 ## 😴 Demo Screen Shots
-![ChatBot App Demo ScreenShot](/Screenshots/Interface.jpg)
-![First](/Screenshots/First%20Look.jpg)
-![Second](/Screenshots/Second%20Look.jpg)
-![Chat](/Screenshots/chat%20Look.jpg)
+![](/Screenshots/Interface.jpg)
+![](/Screenshots/First%20Look.jpg)
+![](/Screenshots/Second%20Look.jpg)
+![](/Screenshots/chat%20Look.jpg)
 
 ## 🚀 Features
 
