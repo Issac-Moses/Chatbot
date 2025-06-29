@@ -7,9 +7,9 @@ This is a basic web-based chatbot built using **HTML**, **CSS**, and **JavaScrip
 
 ## 😴 Demo Screen Shots
 ![ChatBot App Demo ScreenShot](/Screenshots/Interface.jpg)
-![First](/Screenshots/First Look.jpg)
-![Second](/Screenshots/Second Look.jpg)
-![Chat](/Screenshots/chat Look.jpg)
+![First](/Screenshots/First%20Look.jpg)
+![Second](/Screenshots/Second%20Look.jpg)
+![Chat](/Screenshots/chat%20Look.jpg)
 
 ## 🚀 Features
 
