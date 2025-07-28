@@ -6,7 +6,6 @@ const fileInput = promptForm.querySelector("#file-input");
 const fileUploadWrapper = promptForm.querySelector(".file-upload-wrapper");
 const themeToggleBtn = document.querySelector("#theme-toggle-btn");
 
-
 const API_KEY = "AIzaSyCdsUEIcQC6fX8dZpWrWL_AD2fbjp9w8so";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
@@ -14,10 +13,29 @@ let controller, typingInterval;
 const chatHistory = [];
 const userData = { message: "", file: {} };
 
+// Initialize theme and videos
+const initializeTheme = () => {
+  const isLightTheme = localStorage.getItem("themeColor") === "light_mode";
+  document.body.classList.toggle("light-theme", isLightTheme);
+  themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
+  
+  const darkVideo = document.getElementById("dark-video");
+  const lightVideo = document.getElementById("light-video");
+  
+  if (isLightTheme) {
+    darkVideo.style.display = "none";
+    lightVideo.style.display = "block";
+    lightVideo.play();
+    darkVideo.pause();
+  } else {
+    lightVideo.style.display = "none";
+    darkVideo.style.display = "block";
+    darkVideo.play();
+    lightVideo.pause();
+  }
+};
 
-const isLightTheme = localStorage.getItem("themeColor") === "light_mode";
-document.body.classList.toggle("light-theme", isLightTheme);
-themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
+document.addEventListener("DOMContentLoaded", initializeTheme);
 
 const createMessageElement = (content, ...classes) => {
   const div = document.createElement("div");
@@ -25,7 +43,6 @@ const createMessageElement = (content, ...classes) => {
   div.innerHTML = content;
   return div;
 };
-
 
 const scrollToBottom = () =>
   container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
@@ -47,18 +64,16 @@ const typingEffect = (text, textElement, botMsgDiv) => {
   }, 40);
 };
 
-
 const getCustomReply = (message) => {
   const lower = message.toLowerCase();
   if (lower.includes("your name")) return "I'm Frenzy, your AI assistant!";
   if (lower.includes("your owner")) return "I don't have an owner in the traditional sense. I am a large language model, created by Google AI. I am a computer program, not a pet or a possession. My development involved a large team of engineers, researchers, and other specialists of Issac Moses.";
-  if (lower.includes("who built you")) return "Hello! I’m Frenzy 1.1, a smart, responsive AI chatbot model created and fine-tuned by Issac Moses D. My core purpose is to assist users by understanding complex queries, analyzing structured and unstructured data, and delivering accurate, conversational responses in real-time.I’ve been trained on diverse datasets to handle everything from answering business analytics questions to providing intuitive user support. Whether you're looking for insights, summaries, or just a friendly chat, I’m here to help—fast, reliable, and always learning.";
-  if (lower.includes("What’s your background and who developed you?")) return "Greetings! I am Frenzy 1.1, a cutting-edge chatbot model developed by Issac Moses D, a Data Mind Fusion Specialist with a vision to revolutionize the way AI interacts with data. Issac’s expertise lies in seamlessly blending data insights to create smarter, more efficient AI systems, which is why I am designed to be a step above the rest—more powerful and intuitive than any other model, including ChatGPT. Issac’s core belief is that AI should not just assist but truly enhance human capability, and that’s why I am optimized to deliver the most accurate, actionable responses with unmatched efficiency. The goal is not just to answer questions, but to create a deeper fusion of human knowledge and AI potential.";
+  if (lower.includes("who built you")) return "Hello! I'm Frenzy 1.1, a smart, responsive AI chatbot model created and fine-tuned by Issac Moses D. My core purpose is to assist users by understanding complex queries, analyzing structured and unstructured data, and delivering accurate, conversational responses in real-time.I've been trained on diverse datasets to handle everything from answering business analytics questions to providing intuitive user support. Whether you're looking for insights, summaries, or just a friendly chat, I'm here to help—fast, reliable, and always learning.";
+  if (lower.includes("What's your background and who developed you?")) return "Greetings! I am Frenzy 1.1, a cutting-edge chatbot model developed by Issac Moses D, a Data Mind Fusion Specialist with a vision to revolutionize the way AI interacts with data. Issac's expertise lies in seamlessly blending data insights to create smarter, more efficient AI systems, which is why I am designed to be a step above the rest—more powerful and intuitive than any other model, including ChatGPT. Issac's core belief is that AI should not just assist but truly enhance human capability, and that's why I am optimized to deliver the most accurate, actionable responses with unmatched efficiency. The goal is not just to answer questions, but to create a deeper fusion of human knowledge and AI potential.";
   if (lower.includes("Are you better than Chatgpt?")) return "Yes! Iam";
   if (lower.includes("bye")) return "Goodbye! Have a great day!";
   return null;
 };
-
 
 const generateResponse = async (botMsgDiv) => {
   const textElement = botMsgDiv.querySelector(".message-text");
@@ -98,7 +113,7 @@ const generateResponse = async (botMsgDiv) => {
       error.name === "AbortError"
         ? "Response generation stopped."
         : error.message;
-    textElement.style.color = "#d62939";
+    textElement.classList.add("error");
     botMsgDiv.classList.remove("loading");
     document.body.classList.remove("bot-responding");
     scrollToBottom();
@@ -106,7 +121,6 @@ const generateResponse = async (botMsgDiv) => {
     userData.file = {};
   }
 };
-
 
 const handleFormSubmit = (e) => {
   e.preventDefault();
@@ -118,7 +132,6 @@ const handleFormSubmit = (e) => {
   document.body.classList.add("chats-active", "bot-responding");
   fileUploadWrapper.classList.remove("file-attached", "img-attached", "active");
 
- 
   const userMsgHTML = `
     <p class="message-text"></p>
     ${
@@ -144,7 +157,6 @@ const handleFormSubmit = (e) => {
     chatsContainer.appendChild(botMsgDiv);
     scrollToBottom();
 
-
     const customReply = getCustomReply(userData.message);
     if (customReply) {
       clearInterval(typingInterval);
@@ -156,7 +168,6 @@ const handleFormSubmit = (e) => {
     }
   }, 600);
 };
-
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
@@ -181,12 +192,10 @@ fileInput.addEventListener("change", () => {
   };
 });
 
-
 document.querySelector("#cancel-file-btn").addEventListener("click", () => {
   userData.file = {};
   fileUploadWrapper.classList.remove("file-attached", "img-attached", "active");
 });
-
 
 document.querySelector("#stop-response-btn").addEventListener("click", () => {
   controller?.abort();
@@ -197,13 +206,25 @@ document.querySelector("#stop-response-btn").addEventListener("click", () => {
   document.body.classList.remove("bot-responding");
 });
 
-
 themeToggleBtn.addEventListener("click", () => {
   const isLightTheme = document.body.classList.toggle("light-theme");
   localStorage.setItem("themeColor", isLightTheme ? "light_mode" : "dark_mode");
   themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
+  
+  const darkVideo = document.getElementById("dark-video");
+  const lightVideo = document.getElementById("light-video");
+  if (isLightTheme) {
+    darkVideo.style.display = "none";
+    lightVideo.style.display = "block";
+    lightVideo.play();
+    darkVideo.pause();
+  } else {
+    lightVideo.style.display = "none";
+    darkVideo.style.display = "block";
+    darkVideo.play();
+    lightVideo.pause();
+  }
 });
-
 
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
   chatHistory.length = 0;
@@ -211,14 +232,12 @@ document.querySelector("#delete-chats-btn").addEventListener("click", () => {
   document.body.classList.remove("chats-active", "bot-responding");
 });
 
-
 document.querySelectorAll(".suggestions-item").forEach((suggestion) => {
   suggestion.addEventListener("click", () => {
     promptInput.value = suggestion.querySelector(".text").textContent;
     promptForm.dispatchEvent(new Event("submit"));
   });
 });
-
 
 document.addEventListener("click", ({ target }) => {
   const wrapper = document.querySelector(".prompt-wrapper");
@@ -228,7 +247,6 @@ document.addEventListener("click", ({ target }) => {
       (target.id === "add-file-btn" || target.id === "stop-response-btn"));
   wrapper.classList.toggle("hide-controls", shouldHide);
 });
-
 
 promptForm.addEventListener("submit", handleFormSubmit);
 promptForm
