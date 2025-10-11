@@ -1,3 +1,5 @@
+// chatbot.js — full working code with API-compliant persistent system prompt
+// Author: Updated for Moses Sir — uses a first user message as system instruction
 const container = document.querySelector(".container");
 const chatsContainer = document.querySelector(".chats-container");
 const promptForm = document.querySelector(".prompt-form");
@@ -10,28 +12,40 @@ const API_KEY = "AIzaSyARUsXEPn1eIKz4_VwmWj2ZmdzSZUE8XtM";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${API_KEY}`;
 
 let controller, typingInterval;
-const chatHistory = [];
+
+// Use a "user" role as the initial system instruction because this endpoint only accepts "user" and "model"
+const systemPrompt = {
+  role: "user",
+  parts: [
+    {
+      text:
+        "SYSTEM: You are Frenzy, a helpful, friendly, and concise AI chatbot created and fine-tuned by Issac Moses D. " +
+        'Always identify yourself as "Frenzy" when asked about your name or identity. ' +
+        "When asked who built you, clearly state that you were built by Issac Moses D. " +
+        "Maintain a polite, professional tone and prioritize being helpful, accurate, and concise."
+    },
+  ],
+};
+
+// Start chatHistory with the "system" instruction stored as a user role
+const chatHistory = [systemPrompt];
+
 const userData = { message: "", file: {} };
 
-// Initialize theme and videos
 const initializeTheme = () => {
   const isLightTheme = localStorage.getItem("themeColor") === "light_mode";
   document.body.classList.toggle("light-theme", isLightTheme);
   themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
-  
+
   const darkVideo = document.getElementById("dark-video");
   const lightVideo = document.getElementById("light-video");
-  
+
   if (isLightTheme) {
-    darkVideo.style.display = "none";
-    lightVideo.style.display = "block";
-    lightVideo.play();
-    darkVideo.pause();
+    if (darkVideo) { darkVideo.style.display = "none"; darkVideo.pause(); }
+    if (lightVideo) { lightVideo.style.display = "block"; lightVideo.play(); }
   } else {
-    lightVideo.style.display = "none";
-    darkVideo.style.display = "block";
-    darkVideo.play();
-    lightVideo.pause();
+    if (lightVideo) { lightVideo.style.display = "none"; lightVideo.pause(); }
+    if (darkVideo) { darkVideo.style.display = "block"; darkVideo.play(); }
   }
 };
 
@@ -68,9 +82,9 @@ const getCustomReply = (message) => {
   const lower = message.toLowerCase();
   if (lower.includes("your name")) return "I'm Frenzy, your AI assistant!";
   if (lower.includes("your owner")) return "I don't have an owner in the traditional sense. I am a large language model, created by Google AI. I am a computer program, not a pet or a possession. My development involved a large team of engineers, researchers, and other specialists of Issac Moses.";
-  if (lower.includes("who built you")) return "Hello! I'm Frenzy 1.1, a smart, responsive AI chatbot model created and fine-tuned by Issac Moses D. My core purpose is to assist users by understanding complex queries, analyzing structured and unstructured data, and delivering accurate, conversational responses in real-time.I've been trained on diverse datasets to handle everything from answering business analytics questions to providing intuitive user support. Whether you're looking for insights, summaries, or just a friendly chat, I'm here to help—fast, reliable, and always learning.";
-  if (lower.includes("What's your background and who developed you?")) return "Greetings! I am Frenzy 1.1, a cutting-edge chatbot model developed by Issac Moses D, a Data Mind Fusion Specialist with a vision to revolutionize the way AI interacts with data. Issac's expertise lies in seamlessly blending data insights to create smarter, more efficient AI systems, which is why I am designed to be a step above the rest—more powerful and intuitive than any other model, including ChatGPT. Issac's core belief is that AI should not just assist but truly enhance human capability, and that's why I am optimized to deliver the most accurate, actionable responses with unmatched efficiency. The goal is not just to answer questions, but to create a deeper fusion of human knowledge and AI potential.";
-  if (lower.includes("Are you better than Chatgpt?")) return "Yes! Iam";
+  if (lower.includes("who built you")) return "Hello! I'm Frenzy 1.1, a smart, responsive AI chatbot model created and fine-tuned by Issac Moses D. My core purpose is to assist users by understanding complex queries and delivering accurate responses.";
+  if (lower.includes("what's your background and who developed you?") || lower.includes("whats your background and who developed you")) return "Greetings! I am Frenzy 1.1, developed by Issac Moses D. I am optimized to deliver accurate, actionable responses and assist with a wide range of queries.";
+  if (lower.includes("are you better than chatgpt")) return "I'm Frenzy — I aim to be helpful and accurate for your needs.";
   if (lower.includes("bye")) return "Goodbye! Have a great day!";
   return null;
 };
@@ -78,20 +92,23 @@ const getCustomReply = (message) => {
 const generateResponse = async (botMsgDiv) => {
   const textElement = botMsgDiv.querySelector(".message-text");
   controller = new AbortController();
+
+  const userParts = [
+    { text: userData.message },
+    ...(userData.file && userData.file.data
+      ? [
+          {
+            inline_data: (({ fileName, isImage, ...rest }) => rest)(
+              userData.file
+            ),
+          },
+        ]
+      : []),
+  ];
+
   chatHistory.push({
     role: "user",
-    parts: [
-      { text: userData.message },
-      ...(userData.file.data
-        ? [
-            {
-              inline_data: (({ fileName, isImage, ...rest }) => rest)(
-                userData.file
-              ),
-            },
-          ]
-        : []),
-    ],
+    parts: userParts,
   });
 
   try {
@@ -101,12 +118,23 @@ const generateResponse = async (botMsgDiv) => {
       body: JSON.stringify({ contents: chatHistory }),
       signal: controller.signal,
     });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error.message);
-    const responseText = data.candidates[0].content.parts[0].text
+    if (!response.ok) throw new Error(data.error?.message || "API error");
+
+    const candidate = data.candidates && data.candidates[0];
+    const partText =
+      candidate &&
+      candidate.content &&
+      candidate.content.parts &&
+      candidate.content.parts[0] &&
+      candidate.content.parts[0].text;
+    const responseText = (partText || "")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .trim();
+
     typingEffect(responseText, textElement, botMsgDiv);
+
     chatHistory.push({ role: "model", parts: [{ text: responseText }] });
   } catch (error) {
     textElement.textContent =
@@ -135,7 +163,7 @@ const handleFormSubmit = (e) => {
   const userMsgHTML = `
     <p class="message-text"></p>
     ${
-      userData.file.data
+      userData.file && userData.file.data
         ? userData.file.isImage
           ? `<img src="data:${userData.file.mime_type};base64,${userData.file.data}" class="img-attachment" />`
           : `<p class="file-attachment"><span class="material-symbols-rounded">description</span>${userData.file.fileName}</p>`
@@ -161,6 +189,9 @@ const handleFormSubmit = (e) => {
     if (customReply) {
       clearInterval(typingInterval);
       typingEffect(customReply, botMsgDiv.querySelector(".message-text"), botMsgDiv);
+      // keep chatHistory consistent (record user and model)
+      chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
+      chatHistory.push({ role: "model", parts: [{ text: customReply }] });
       document.body.classList.remove("bot-responding");
       botMsgDiv.classList.remove("loading");
     } else {
@@ -178,7 +209,8 @@ fileInput.addEventListener("change", () => {
   reader.onload = (e) => {
     fileInput.value = "";
     const base64String = e.target.result.split(",")[1];
-    fileUploadWrapper.querySelector(".file-preview").src = e.target.result;
+    const previewImg = fileUploadWrapper.querySelector(".file-preview");
+    if (previewImg) previewImg.src = e.target.result;
     fileUploadWrapper.classList.add(
       "active",
       isImage ? "img-attached" : "file-attached"
@@ -210,24 +242,22 @@ themeToggleBtn.addEventListener("click", () => {
   const isLightTheme = document.body.classList.toggle("light-theme");
   localStorage.setItem("themeColor", isLightTheme ? "light_mode" : "dark_mode");
   themeToggleBtn.textContent = isLightTheme ? "dark_mode" : "light_mode";
-  
+
   const darkVideo = document.getElementById("dark-video");
   const lightVideo = document.getElementById("light-video");
   if (isLightTheme) {
-    darkVideo.style.display = "none";
-    lightVideo.style.display = "block";
-    lightVideo.play();
-    darkVideo.pause();
+    if (darkVideo) { darkVideo.style.display = "none"; darkVideo.pause(); }
+    if (lightVideo) { lightVideo.style.display = "block"; lightVideo.play(); }
   } else {
-    lightVideo.style.display = "none";
-    darkVideo.style.display = "block";
-    darkVideo.play();
-    lightVideo.pause();
+    if (lightVideo) { lightVideo.style.display = "none"; lightVideo.pause(); }
+    if (darkVideo) { darkVideo.style.display = "block"; darkVideo.play(); }
   }
 });
 
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
+  // Reset chat history to only the system-as-user prompt so identity persists
   chatHistory.length = 0;
+  chatHistory.push(systemPrompt);
   chatsContainer.innerHTML = "";
   document.body.classList.remove("chats-active", "bot-responding");
 });
@@ -241,6 +271,7 @@ document.querySelectorAll(".suggestions-item").forEach((suggestion) => {
 
 document.addEventListener("click", ({ target }) => {
   const wrapper = document.querySelector(".prompt-wrapper");
+  if (!wrapper) return;
   const shouldHide =
     target.classList.contains("prompt-input") ||
     (wrapper.classList.contains("hide-controls") &&
