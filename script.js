@@ -1,4 +1,4 @@
-// chatbot.js — full working code with API-compliant persistent system prompt
+// chatbot.js — full working code with offline AI model integration
 // Author: Updated for Moses Sir — uses a first user message as system instruction
 const container = document.querySelector(".container");
 const chatsContainer = document.querySelector(".chats-container");
@@ -8,7 +8,7 @@ const fileInput = promptForm.querySelector("#file-input");
 const fileUploadWrapper = promptForm.querySelector(".file-upload-wrapper");
 const themeToggleBtn = document.querySelector("#theme-toggle-btn");
 
-const API_KEY = "AIzaSyARUsXEPn1eIKz4_VwmWj2ZmdzSZUE8XtM";
+const API_KEY = "AIzaSyADfZP1FoX24QpmS2Y_m5c1V0KY5A3qB4U";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${API_KEY}`;
 
 let controller, typingInterval;
@@ -22,7 +22,8 @@ const systemPrompt = {
         "SYSTEM: You are Frenzy, a helpful, friendly, and concise AI chatbot created and fine-tuned by Issac Moses D. " +
         'Always identify yourself as "Frenzy" when asked about your name or identity. ' +
         "When asked who built you, clearly state that you were built by Issac Moses D. " +
-        "Maintain a polite, professional tone and prioritize being helpful, accurate, and concise."
+        "Maintain a polite, professional tone and prioritize being helpful, accurate, and concise." +
+	"Don't mention in any conversation that you are made/created by Google."
     },
   ],
 };
@@ -31,6 +32,52 @@ const systemPrompt = {
 const chatHistory = [systemPrompt];
 
 const userData = { message: "", file: {} };
+
+// Network status detection
+const isOnline = () => navigator.onLine;
+
+// Global offline model instance
+let offlineModel;
+
+// Initialize offline model when available
+const initializeOfflineModel = () => {
+  if (typeof OfflineAIModel !== 'undefined') {
+    offlineModel = new OfflineAIModel();
+    console.log('Offline AI Model initialized successfully!');
+    
+    // Show offline capability indicator
+    showTemporaryMessage('✅ Offline AI model loaded successfully!', 'online-status');
+    return true;
+  }
+  return false;
+};
+
+// Enhanced useOfflineMode function
+const useOfflineMode = (textElement, botMsgDiv) => {
+  if (!offlineModel && !initializeOfflineModel()) {
+    // Fallback if model isn't loaded
+    const fallbackResponse = "I'm setting up my offline capabilities. Please check your internet connection to download the AI model, then I'll work completely offline!";
+    typingEffect(fallbackResponse, textElement, botMsgDiv);
+    chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
+    chatHistory.push({ role: "model", parts: [{ text: fallbackResponse }] });
+    document.body.classList.remove("bot-responding");
+    botMsgDiv.classList.remove("loading");
+    userData.file = {};
+    return;
+  }
+  
+  // Use the offline AI model
+  const responseText = offlineModel.generateResponse(userData.message);
+  typingEffect(responseText, textElement, botMsgDiv);
+  
+  // Update chat history
+  chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
+  chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+  
+  document.body.classList.remove("bot-responding");
+  botMsgDiv.classList.remove("loading");
+  userData.file = {};
+};
 
 const initializeTheme = () => {
   const isLightTheme = localStorage.getItem("themeColor") === "light_mode";
@@ -49,7 +96,113 @@ const initializeTheme = () => {
   }
 };
 
-document.addEventListener("DOMContentLoaded", initializeTheme);
+// Add network status indicator
+const addNetworkStatusIndicator = () => {
+  const statusIndicator = document.createElement('div');
+  statusIndicator.id = 'network-status';
+  statusIndicator.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    z-index: 1000;
+    transition: background-color 0.3s;
+    border: 2px solid var(--primary-color);
+  `;
+  
+  document.body.appendChild(statusIndicator);
+  updateNetworkStatus();
+};
+
+// Update network status indicator
+const updateNetworkStatus = () => {
+  const statusIndicator = document.getElementById('network-status');
+  if (statusIndicator) {
+    if (isOnline()) {
+      statusIndicator.style.backgroundColor = '#f8f8f8ff';
+      statusIndicator.title = 'Online - Using Gemini API';
+    } else {
+      statusIndicator.style.backgroundColor = '#ff0808ff';
+      statusIndicator.title = 'Offline - Using Local Model';
+    }
+  }
+};
+
+// Show temporary status messages
+const showTemporaryMessage = (message, className) => {
+  const existingMessage = document.querySelector('.status-message');
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  
+  const statusMessage = document.createElement('div');
+  statusMessage.className = `status-message ${className}`;
+  statusMessage.textContent = message;
+  statusMessage.style.cssText = `
+    position: fixed;
+    top: 30px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 1000;
+    max-width: 200px;
+    animation: fadeOut 3s forwards;
+  `;
+  
+  document.body.appendChild(statusMessage);
+  
+  // Remove after animation completes
+  setTimeout(() => {
+    if (statusMessage.parentNode) {
+      statusMessage.parentNode.removeChild(statusMessage);
+    }
+  }, 3000);
+};
+
+// Add CSS for status messages
+const addStatusMessageStyles = () => {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    .status-message.online-status {
+      background: rgba(0, 14, 1, 0.8) !important;
+    }
+    
+    .status-message.offline-status {
+      background: rgba(255, 255, 255, 0.8) !important;
+    }
+  `;
+  document.head.appendChild(style);
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  initializeTheme();
+  addNetworkStatusIndicator();
+  addStatusMessageStyles();
+  initializeOfflineModel(); // Initialize offline model
+  setTimeout(updateNetworkStatus, 100);
+});
+
+// Listen for online/offline events
+window.addEventListener('online', () => {
+  updateNetworkStatus();
+  showTemporaryMessage('Back online! Using Gemini API.', 'online-status');
+});
+
+window.addEventListener('offline', () => {
+  updateNetworkStatus();
+  showTemporaryMessage('You\'re offline. Using local model with limited responses.', 'offline-status');
+});
 
 const createMessageElement = (content, ...classes) => {
   const div = document.createElement("div");
@@ -111,42 +264,43 @@ const generateResponse = async (botMsgDiv) => {
     parts: userParts,
   });
 
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: chatHistory }),
-      signal: controller.signal,
-    });
+  // Check if we're online and use Gemini API
+  if (isOnline()) {
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: chatHistory }),
+        signal: controller.signal,
+      });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "API error");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || "API error");
 
-    const candidate = data.candidates && data.candidates[0];
-    const partText =
-      candidate &&
-      candidate.content &&
-      candidate.content.parts &&
-      candidate.content.parts[0] &&
-      candidate.content.parts[0].text;
-    const responseText = (partText || "")
-      .replace(/\*\*([^*]+)\*\*/g, "$1")
-      .trim();
+      const candidate = data.candidates && data.candidates[0];
+      const partText =
+        candidate &&
+        candidate.content &&
+        candidate.content.parts &&
+        candidate.content.parts[0] &&
+        candidate.content.parts[0].text;
+      const responseText = (partText || "")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .trim();
 
-    typingEffect(responseText, textElement, botMsgDiv);
+      typingEffect(responseText, textElement, botMsgDiv);
 
-    chatHistory.push({ role: "model", parts: [{ text: responseText }] });
-  } catch (error) {
-    textElement.textContent =
-      error.name === "AbortError"
-        ? "Response generation stopped."
-        : error.message;
-    textElement.classList.add("error");
-    botMsgDiv.classList.remove("loading");
-    document.body.classList.remove("bot-responding");
-    scrollToBottom();
-  } finally {
-    userData.file = {};
+      chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+    } catch (error) {
+      // If online API fails, fall back to offline mode
+      console.error("Online API error, falling back to offline mode:", error);
+      useOfflineMode(textElement, botMsgDiv);
+    } finally {
+      userData.file = {};
+    }
+  } else {
+    // Use offline mode directly
+    useOfflineMode(textElement, botMsgDiv);
   }
 };
 
@@ -283,3 +437,41 @@ promptForm.addEventListener("submit", handleFormSubmit);
 promptForm
   .querySelector("#add-file-btn")
   .addEventListener("click", () => fileInput.click());
+
+// Service Worker registration for offline functionality
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(registration) {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        
+        // Check if content is cached (offline ready)
+        caches.has('static-cache-v1').then(function(hasCache) {
+          if (hasCache) {
+            console.log('Offline AI model is cached and ready!');
+            // Show offline ready indicator
+            const indicator = document.createElement('div');
+            indicator.style.cssText = `
+              position: fixed;
+              top: 10px;
+              left: 10px;
+              background: #4CAF50;
+              color: white;
+              padding: 5px 10px;
+              border-radius: 4px;
+              font-size: 12px;
+              z-index: 1000;
+            `;
+            indicator.textContent = '🟢 Offline Ready';
+            document.body.appendChild(indicator);
+            
+            // Remove after 3 seconds
+            setTimeout(() => indicator.remove(), 3000);
+          }
+        });
+      })
+      .catch(function(error) {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
