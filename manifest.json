@@ -1,0 +1,21 @@
+{
+  "name": "Frenzy Chatbot - Offline AI",
+  "short_name": "FrenzyAI",
+  "description": "Offline AI chatbot created by Issac Moses D",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1d7efd",
+  "icons": [
+    {
+      "src": "frenzy.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "frenzy.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
