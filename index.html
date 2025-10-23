@@ -9,6 +9,53 @@
     <link rel="preload" href="videos/light-video.mp4" as="video" type="video/mp4">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@32,400,0,0" />
     <link rel="stylesheet" href="style.css" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Service Worker Registration -->
+    <script>
+      // Register Service Worker for offline functionality
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          // Use relative path for local development
+          navigator.serviceWorker.register('./sw.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // Check if content is cached (offline ready)
+              caches.has('static-cache-v1').then(function(hasCache) {
+                if (hasCache) {
+                  console.log('Offline AI model is cached and ready!');
+                  // Show offline ready indicator
+                  const indicator = document.createElement('div');
+                  indicator.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    z-index: 1000;
+                  `;
+                  indicator.textContent = '🟢 Offline Ready';
+                  document.body.appendChild(indicator);
+                  
+                  // Remove after 3 seconds
+                  setTimeout(() => indicator.remove(), 3000);
+                }
+              });
+            })
+            .catch(function(error) {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      } else {
+        console.log('Service Workers are not supported in this browser');
+      }
+    </script>
   </head>
   <body>
     <div class="video-container">
@@ -24,25 +71,25 @@
 
     <div class="container">
       <header class="app-header">
-        <h1 class="heading">Moses Chatbot</h1>
-        <h4 class="sub-heading">How can I help you today?</h4>
+        <h1 class="heading">𝓜𝒐𝒔𝒆𝒔 𝓒𝖍𝓪𝓽𝖇𝓸𝓽</h1>
+        <h4 class="sub-heading">𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚑𝚎𝚕𝚙 𝚢𝚘𝚞 𝚝𝚘𝚍𝚊𝚢?</h4>
       </header>
 
       <ul class="suggestions">
         <li class="suggestions-item">
-          <p class="text">Design a home office setup for remote work under ₹500.</p>
+          <p class="text">𝙳𝚎𝚜𝚒𝚐𝚗 𝚊 𝚑𝚘𝚖𝚎 𝚘𝚏𝚏𝚒𝚌𝚎 𝚜𝚎𝚝𝚞𝚙 𝚏𝚘𝚛 𝚛𝚎𝚖𝚘𝚝𝚎 𝚠𝚘𝚛𝚔 𝚞𝚗𝚍𝚎𝚛 ₹500.</p>
           <span class="icon material-symbols-rounded">draw</span>
         </li>
         <li class="suggestions-item">
-          <p class="text">How can I level up my web development expertise in 2025?</p>
+          <p class="text">𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚕𝚎𝚟𝚎𝚕 𝚞𝚙 𝚖𝚢 𝚠𝚎𝚋 𝚍𝚎𝚟𝚎𝚕𝚘𝚙𝚖𝚎𝚗𝚝 𝚎𝚡𝚙𝚎𝚛𝚝𝚒𝚜𝚎 𝚒𝚗 2025?</p>
           <span class="icon material-symbols-rounded">lightbulb</span>
         </li>
         <li class="suggestions-item">
-          <p class="text">who built you?</p>
+          <p class="text">𝚠𝚑𝚘 𝚋𝚞𝚒𝚕𝚝 𝚢𝚘𝚞?</p>
           <span class="icon material-symbols-rounded">explore</span>
         </li>
         <li class="suggestions-item">
-          <p class="text">Create a React JS component for the simple todo list app.</p>
+          <p class="text">𝙲𝚛𝚎𝚊𝚝𝚎 𝚊 𝚁𝚎𝚊𝚌𝚝 𝙹𝚂 𝚌𝚘𝚖𝚙𝚘𝚗𝚎𝚗𝚝 𝚏𝚘𝚛 𝚝𝚑𝚎 𝚜𝚒𝚖𝚙𝚕𝚎 𝚝𝚘𝚍𝚘 𝚕𝚒𝚜𝚝 𝚊𝚙𝚙.</p>
           <span class="icon material-symbols-rounded">code_blocks</span>
         </li>
       </ul>
@@ -70,10 +117,13 @@
           <button id="theme-toggle-btn" class="material-symbols-rounded">light_mode</button>
           <button id="delete-chats-btn" class="material-symbols-rounded">delete</button>
         </div>
-        <p class="disclaimer-text">Frenzy can make mistakes, so double-check it.</p>
-        <p class="disclaimer-text">© Copyright @Issac Moses. So Contact Owner.</p>
+        <p class="disclaimer-text">𝖥𝗋𝖾𝗇𝗓𝗒 𝖼𝖺𝗇 𝗆𝖺𝗄𝖾 𝗆𝗂𝗌𝗍𝖺𝗄𝖾𝗌, 𝗌𝗈 𝖽𝗈𝗎𝖻𝗅𝖾-𝖼𝗁𝖾𝖼𝗄 𝗂𝗍.</p>
+        <p class="disclaimer-text">© 𝖢𝗈𝗉𝗒𝗋𝗂𝗀𝗁𝗍 @𝖨𝗌𝗌𝖺𝖼 𝖬𝗈𝗌𝖾𝗌. 𝖲𝗈 𝖢𝗈𝗇𝗍𝖺𝖼𝗍 𝖮𝗐𝗇𝖾𝗋.</p>
       </div>
     </div>
+    
+    <!-- Load the offline AI model -->
+    <script src="models/offline-ai-model.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
