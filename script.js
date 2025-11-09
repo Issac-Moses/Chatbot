@@ -1,5 +1,34 @@
-// chatbot.js — full working code with offline AI model integration
-// Author: Updated for Moses Sir — uses a first user message as system instruction
+// script.js - Merged: Supabase Auth + Original Chat Functionality
+// Author: Moses - Frenzy Model 1.1 with Authentication
+
+// ========================================
+// SUPABASE CONFIGURATION
+// ========================================
+const SUPABASE_URL = "https://bhemodjjglfoqmnqhpxs.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZW1vZGpqZ2xmb3FtbnFocHhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2ODI0ODcsImV4cCI6MjA3ODI1ODQ4N30.czQCuoj3Tmv0-5LZ-mvYpE17NSYR2Mp4tm8mPUiLqJ4"; // Replace with your real key
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ========================================
+// DOM REFERENCES - AUTH
+// ========================================
+const authOverlay = document.getElementById("auth-overlay");
+const appContainer = document.getElementById("app-container");
+
+const loginForm = document.getElementById("login-form");
+const registerForm = document.getElementById("register-form");
+const tabLoginBtn = document.getElementById("tab-login");
+const tabRegisterBtn = document.getElementById("tab-register");
+const authFeedback = document.getElementById("auth-feedback");
+
+const maidIdLogin = document.getElementById("maid-id-login");
+const passwordLogin = document.getElementById("password-login");
+const maidIdRegister = document.getElementById("maid-id-register");
+const passwordRegister = document.getElementById("password-register");
+
+// ========================================
+// DOM REFERENCES - CHAT
+// ========================================
 const container = document.querySelector(".container");
 const chatsContainer = document.querySelector(".chats-container");
 const promptForm = document.querySelector(".prompt-form");
@@ -7,13 +36,17 @@ const promptInput = promptForm.querySelector(".prompt-input");
 const fileInput = promptForm.querySelector("#file-input");
 const fileUploadWrapper = promptForm.querySelector(".file-upload-wrapper");
 const themeToggleBtn = document.querySelector("#theme-toggle-btn");
+const logoutBtn = document.getElementById("logout-btn");
 
+// ========================================
+// API CONFIGURATION
+// ========================================
 const API_KEY = "AIzaSyADfZP1FoX24QpmS2Y_m5c1V0KY5A3qB4U";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${API_KEY}`;
 
 let controller, typingInterval;
 
-// Use a "user" role as the initial system instruction because this endpoint only accepts "user" and "model"
+// System prompt
 const systemPrompt = {
   role: "user",
   parts: [
@@ -22,41 +55,216 @@ const systemPrompt = {
         "SYSTEM: You are Frenzy, a helpful, friendly, and concise AI chatbot created and fine-tuned by Issac Moses D. " +
         'Always identify yourself as "Frenzy" when asked about your name or identity. ' +
         "When asked who built you, clearly state that you were built by Issac Moses D. " +
-        "Maintain a polite, professional tone and prioritize being helpful, accurate, and concise." +
-	"Don't mention in any conversation that you are made/created by Google."
+        "Maintain a polite, professional tone and prioritize being helpful, accurate, and concise. " +
+        "Don't mention in any conversation that you are made/created by Google."
     },
   ],
 };
 
-// Start chatHistory with the "system" instruction stored as a user role
 const chatHistory = [systemPrompt];
-
 const userData = { message: "", file: {} };
-
-// Network status detection
-const isOnline = () => navigator.onLine;
 
 // Global offline model instance
 let offlineModel;
 
-// Initialize offline model when available
+// ========================================
+// AUTH UI HELPERS
+// ========================================
+function showAuthOverlay() {
+  authOverlay.classList.remove("hidden");
+  appContainer.classList.add("hidden");
+}
+
+function hideAuthOverlay() {
+  authOverlay.classList.add("hidden");
+  appContainer.classList.remove("hidden");
+}
+
+function showFeedback(text, isError = false) {
+  authFeedback.textContent = text;
+  authFeedback.style.color = isError ? "#ff6b6b" : "#4ade80";
+  authFeedback.style.background = isError 
+    ? "rgba(255, 107, 107, 0.1)" 
+    : "rgba(74, 222, 128, 0.1)";
+  authFeedback.style.border = isError
+    ? "1px solid rgba(255, 107, 107, 0.3)"
+    : "1px solid rgba(74, 222, 128, 0.3)";
+}
+
+// ========================================
+// TAB SWITCHING
+// ========================================
+tabLoginBtn.addEventListener("click", () => {
+  tabLoginBtn.classList.add("active");
+  tabRegisterBtn.classList.remove("active");
+  loginForm.classList.remove("hidden");
+  registerForm.classList.add("hidden");
+  authFeedback.textContent = "";
+});
+
+tabRegisterBtn.addEventListener("click", () => {
+  tabRegisterBtn.classList.add("active");
+  tabLoginBtn.classList.remove("active");
+  registerForm.classList.remove("hidden");
+  loginForm.classList.add("hidden");
+  authFeedback.textContent = "";
+});
+
+// ========================================
+// AUTHENTICATION HANDLERS
+// ========================================
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = maidIdRegister.value.trim();
+  const password = passwordRegister.value;
+
+  if (!email || !password) {
+    showFeedback("Please provide email and password.", true);
+    return;
+  }
+
+  showFeedback("Creating account...");
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      showFeedback("Registration error: " + error.message, true);
+      return;
+    }
+
+    showFeedback("Account created! You can now login.");
+    
+    setTimeout(() => {
+      tabLoginBtn.click();
+      maidIdLogin.value = email;
+      passwordLogin.value = "";
+    }, 2000);
+
+  } catch (err) {
+    showFeedback("Unexpected error: " + err.message, true);
+  }
+});
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = maidIdLogin.value.trim();
+  const password = passwordLogin.value;
+
+  if (!email || !password) {
+    showFeedback("Please provide email and password.", true);
+    return;
+  }
+
+  showFeedback("Signing in...");
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      showFeedback("Login failed: " + error.message, true);
+      return;
+    }
+
+    if (data && data.user) {
+      showFeedback("Login successful!");
+      await onAuthSuccess(data.user);
+    }
+  } catch (err) {
+    showFeedback("Unexpected error: " + err.message, true);
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  if (confirm("Are you sure you want to logout?")) {
+    try {
+      await supabaseClient.auth.signOut();
+      showFeedback("Logged out successfully.");
+      showAuthOverlay();
+      
+      // Reset chat
+      chatHistory.length = 0;
+      chatHistory.push(systemPrompt);
+      chatsContainer.innerHTML = "";
+      document.body.classList.remove("chats-active", "bot-responding");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  }
+});
+
+// ========================================
+// POST-AUTH SETUP
+// ========================================
+async function onAuthSuccess(user) {
+  hideAuthOverlay();
+  console.log("Authenticated user:", user?.email);
+
+  // Initialize chat UI
+  initializeTheme();
+  addNetworkStatusIndicator();
+  addStatusMessageStyles();
+  initializeOfflineModel();
+
+  // Subscribe to auth state changes
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    console.log("Auth state changed:", event);
+    if (!session) {
+      showAuthOverlay();
+    }
+  });
+}
+
+// ========================================
+// SESSION CHECK ON LOAD
+// ========================================
+async function checkSessionOnLoad() {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      console.error("Session error:", error);
+      showAuthOverlay();
+      return;
+    }
+
+    const session = data?.session;
+
+    if (session && session.user) {
+      await onAuthSuccess(session.user);
+    } else {
+      showAuthOverlay();
+    }
+  } catch (err) {
+    console.error("Error checking session:", err);
+    showAuthOverlay();
+  }
+}
+
+// ========================================
+// OFFLINE AI MODEL FUNCTIONS
+// ========================================
+const isOnline = () => navigator.onLine;
+
 const initializeOfflineModel = () => {
   if (typeof OfflineAIModel !== 'undefined') {
     offlineModel = new OfflineAIModel();
     console.log('Offline AI Model initialized successfully!');
-    
-    // Show offline capability indicator
-    showTemporaryMessage('✅ Offline AI model loaded successfully!', 'online-status');
+    showTemporaryMessage('✅ Offline AI model loaded!', 'online-status');
     return true;
   }
   return false;
 };
 
-// Enhanced useOfflineMode function
 const useOfflineMode = (textElement, botMsgDiv) => {
   if (!offlineModel && !initializeOfflineModel()) {
-    // Fallback if model isn't loaded
-    const fallbackResponse = "I'm setting up my offline capabilities. Please check your internet connection to download the AI model, then I'll work completely offline!";
+    const fallbackResponse = "I'm setting up offline capabilities. Please check your connection!";
     typingEffect(fallbackResponse, textElement, botMsgDiv);
     chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
     chatHistory.push({ role: "model", parts: [{ text: fallbackResponse }] });
@@ -66,11 +274,9 @@ const useOfflineMode = (textElement, botMsgDiv) => {
     return;
   }
   
-  // Use the offline AI model
   const responseText = offlineModel.generateResponse(userData.message);
   typingEffect(responseText, textElement, botMsgDiv);
   
-  // Update chat history
   chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
   chatHistory.push({ role: "model", parts: [{ text: responseText }] });
   
@@ -79,6 +285,9 @@ const useOfflineMode = (textElement, botMsgDiv) => {
   userData.file = {};
 };
 
+// ========================================
+// THEME FUNCTIONS
+// ========================================
 const initializeTheme = () => {
   const isLightTheme = localStorage.getItem("themeColor") === "light_mode";
   document.body.classList.toggle("light-theme", isLightTheme);
@@ -96,7 +305,9 @@ const initializeTheme = () => {
   }
 };
 
-// Add network status indicator
+// ========================================
+// NETWORK STATUS
+// ========================================
 const addNetworkStatusIndicator = () => {
   const statusIndicator = document.createElement('div');
   statusIndicator.id = 'network-status';
@@ -116,26 +327,22 @@ const addNetworkStatusIndicator = () => {
   updateNetworkStatus();
 };
 
-// Update network status indicator
 const updateNetworkStatus = () => {
   const statusIndicator = document.getElementById('network-status');
   if (statusIndicator) {
     if (isOnline()) {
-      statusIndicator.style.backgroundColor = '#f8f8f8ff';
+      statusIndicator.style.backgroundColor = '#4ade80';
       statusIndicator.title = 'Online - Using Gemini API';
     } else {
-      statusIndicator.style.backgroundColor = '#ff0808ff';
+      statusIndicator.style.backgroundColor = '#ef4444';
       statusIndicator.title = 'Offline - Using Local Model';
     }
   }
 };
 
-// Show temporary status messages
 const showTemporaryMessage = (message, className) => {
   const existingMessage = document.querySelector('.status-message');
-  if (existingMessage) {
-    existingMessage.remove();
-  }
+  if (existingMessage) existingMessage.remove();
   
   const statusMessage = document.createElement('div');
   statusMessage.className = `status-message ${className}`;
@@ -144,10 +351,10 @@ const showTemporaryMessage = (message, className) => {
     position: fixed;
     top: 30px;
     right: 10px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     color: white;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 0.8rem;
     z-index: 1000;
     max-width: 200px;
@@ -155,16 +362,9 @@ const showTemporaryMessage = (message, className) => {
   `;
   
   document.body.appendChild(statusMessage);
-  
-  // Remove after animation completes
-  setTimeout(() => {
-    if (statusMessage.parentNode) {
-      statusMessage.parentNode.removeChild(statusMessage);
-    }
-  }, 3000);
+  setTimeout(() => statusMessage.remove(), 3000);
 };
 
-// Add CSS for status messages
 const addStatusMessageStyles = () => {
   const style = document.createElement('style');
   style.textContent = `
@@ -173,27 +373,10 @@ const addStatusMessageStyles = () => {
       70% { opacity: 1; }
       100% { opacity: 0; }
     }
-    
-    .status-message.online-status {
-      background: rgba(0, 14, 1, 0.8) !important;
-    }
-    
-    .status-message.offline-status {
-      background: rgba(255, 255, 255, 0.8) !important;
-    }
   `;
   document.head.appendChild(style);
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  initializeTheme();
-  addNetworkStatusIndicator();
-  addStatusMessageStyles();
-  initializeOfflineModel(); // Initialize offline model
-  setTimeout(updateNetworkStatus, 100);
-});
-
-// Listen for online/offline events
 window.addEventListener('online', () => {
   updateNetworkStatus();
   showTemporaryMessage('Back online! Using Gemini API.', 'online-status');
@@ -201,9 +384,12 @@ window.addEventListener('online', () => {
 
 window.addEventListener('offline', () => {
   updateNetworkStatus();
-  showTemporaryMessage('You\'re offline. Using local model with limited responses.', 'offline-status');
+  showTemporaryMessage('Offline. Using local model.', 'offline-status');
 });
 
+// ========================================
+// CHAT FUNCTIONS
+// ========================================
 const createMessageElement = (content, ...classes) => {
   const div = document.createElement("div");
   div.classList.add("message", ...classes);
@@ -234,10 +420,7 @@ const typingEffect = (text, textElement, botMsgDiv) => {
 const getCustomReply = (message) => {
   const lower = message.toLowerCase();
   if (lower.includes("your name")) return "I'm Frenzy, your AI assistant!";
-  if (lower.includes("your owner")) return "I don't have an owner in the traditional sense. I am a large language model, created by Google AI. I am a computer program, not a pet or a possession. My development involved a large team of engineers, researchers, and other specialists of Issac Moses.";
-  if (lower.includes("who built you")) return "Hello! I'm Frenzy 1.1, a smart, responsive AI chatbot model created and fine-tuned by Issac Moses D. My core purpose is to assist users by understanding complex queries and delivering accurate responses.";
-  if (lower.includes("what's your background and who developed you?") || lower.includes("whats your background and who developed you")) return "Greetings! I am Frenzy 1.1, developed by Issac Moses D. I am optimized to deliver accurate, actionable responses and assist with a wide range of queries.";
-  if (lower.includes("are you better than chatgpt")) return "I'm Frenzy — I aim to be helpful and accurate for your needs.";
+  if (lower.includes("who built you")) return "Hello! I'm Frenzy 1.1, created by Issac Moses D.";
   if (lower.includes("bye")) return "Goodbye! Have a great day!";
   return null;
 };
@@ -264,7 +447,6 @@ const generateResponse = async (botMsgDiv) => {
     parts: userParts,
   });
 
-  // Check if we're online and use Gemini API
   if (isOnline()) {
     try {
       const response = await fetch(API_URL, {
@@ -289,17 +471,14 @@ const generateResponse = async (botMsgDiv) => {
         .trim();
 
       typingEffect(responseText, textElement, botMsgDiv);
-
       chatHistory.push({ role: "model", parts: [{ text: responseText }] });
     } catch (error) {
-      // If online API fails, fall back to offline mode
-      console.error("Online API error, falling back to offline mode:", error);
+      console.error("Online API error, using offline:", error);
       useOfflineMode(textElement, botMsgDiv);
     } finally {
       userData.file = {};
     }
   } else {
-    // Use offline mode directly
     useOfflineMode(textElement, botMsgDiv);
   }
 };
@@ -343,7 +522,6 @@ const handleFormSubmit = (e) => {
     if (customReply) {
       clearInterval(typingInterval);
       typingEffect(customReply, botMsgDiv.querySelector(".message-text"), botMsgDiv);
-      // keep chatHistory consistent (record user and model)
       chatHistory.push({ role: "user", parts: [{ text: userData.message }] });
       chatHistory.push({ role: "model", parts: [{ text: customReply }] });
       document.body.classList.remove("bot-responding");
@@ -354,6 +532,9 @@ const handleFormSubmit = (e) => {
   }, 600);
 };
 
+// ========================================
+// EVENT LISTENERS
+// ========================================
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (!file) return;
@@ -409,7 +590,6 @@ themeToggleBtn.addEventListener("click", () => {
 });
 
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
-  // Reset chat history to only the system-as-user prompt so identity persists
   chatHistory.length = 0;
   chatHistory.push(systemPrompt);
   chatsContainer.innerHTML = "";
@@ -438,40 +618,14 @@ promptForm
   .querySelector("#add-file-btn")
   .addEventListener("click", () => fileInput.click());
 
-// Service Worker registration for offline functionality
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js')
-      .then(function(registration) {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        
-        // Check if content is cached (offline ready)
-        caches.has('static-cache-v1').then(function(hasCache) {
-          if (hasCache) {
-            console.log('Offline AI model is cached and ready!');
-            // Show offline ready indicator
-            const indicator = document.createElement('div');
-            indicator.style.cssText = `
-              position: fixed;
-              top: 10px;
-              left: 10px;
-              background: #4CAF50;
-              color: white;
-              padding: 5px 10px;
-              border-radius: 4px;
-              font-size: 12px;
-              z-index: 1000;
-            `;
-            indicator.textContent = '🟢 Offline Ready';
-            document.body.appendChild(indicator);
-            
-            // Remove after 3 seconds
-            setTimeout(() => indicator.remove(), 3000);
-          }
-        });
-      })
-      .catch(function(error) {
-        console.log('ServiceWorker registration failed: ', error);
-      });
-  });
-}
+// ========================================
+// INITIALIZE ON PAGE LOAD
+// ========================================
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Initializing Frenzy Chatbot with Auth...");
+  await checkSessionOnLoad();
+
+  if (!authOverlay.classList.contains("hidden")) {
+    setTimeout(() => maidIdLogin.focus(), 100);
+  }
+});
