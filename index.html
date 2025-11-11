@@ -1,17 +1,34 @@
 <!DOCTYPE html>
-<!-- ChatBot by Moses - Frenzy Model 1.1 (with Supabase Auth) -->
+<!-- ChatBot by Moses - Frenzy Model 1.1 (with Supabase Auth & Chat History Sidebar) -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Moses Chatbot | Frenzy Model</title>
+    <meta name="description" content="Frenzy Model 1.1 - Advanced AI Chatbot with Chat History">
+    
+    <!-- Preload videos -->
     <link rel="preload" href="videos/desktop-video.mp4" as="video" type="video/mp4">
     <link rel="preload" href="videos/light-video.mp4" as="video" type="video/mp4">
+    
+    <!-- Material Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@32,400,0,0" />
+    
+    <!-- Main Styles -->
     <link rel="stylesheet" href="style.css" />
     
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Web App Manifest (Commented out for local development to avoid CORS) -->
+    <!-- <link rel="manifest" href="manifest.json"> -->
+    
+    <!-- Theme Color for Mobile -->
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    
+    <!-- Preconnect to external domains for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://bhemodjjglfoqmnqhpxs.supabase.co">
   </head>
   <body>
     <!-- AUTH OVERLAY (Login/Register) -->
@@ -121,7 +138,29 @@
       </div>
     </div>
 
-    <!-- MAIN APP (Hidden until authenticated) -->
+    <!-- CHAT HISTORY SIDEBAR -->
+    <div id="chat-history-sidebar" class="chat-history-sidebar hidden">
+      <div class="sidebar-header">
+        <button id="new-chat-btn" class="new-chat-btn">
+          <span class="material-symbols-rounded">add</span>
+          New chat
+        </button>
+        <button id="close-sidebar-btn" class="close-sidebar-btn" aria-label="Close sidebar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="sidebar-content">
+        <div id="chat-sessions-list" class="chat-sessions-list">
+          <!-- Chat sessions will be dynamically loaded here -->
+          <div class="no-chats-message">
+            <p>No chat history yet</p>
+            <p style="font-size: 12px; margin-top: 8px;">Start a new conversation!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKGROUND VIDEO CONTAINER -->
     <div class="video-container">
       <video id="dark-video" autoplay muted loop playsinline>
         <source src="videos/desktop-video.mp4" type="video/mp4" />
@@ -133,65 +172,102 @@
       </video>
     </div>
 
+    <!-- MAIN APP CONTAINER (Hidden until authenticated) -->
     <div class="container hidden" id="app-container">
+      <!-- APP HEADER -->
       <header class="app-header">
+        <button id="menu-toggle-btn" class="menu-toggle-btn" aria-label="Toggle sidebar">
+          <span class="material-symbols-rounded">menu</span>
+        </button>
         <h1 class="heading">𝓜𝓸𝓼𝓮𝓼 𝓒𝓱𝓪𝓽𝓫𝓸𝓽</h1>
         <h4 class="sub-heading">𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚑𝚎𝚕𝚙 𝚢𝚘𝚞 𝚝𝚘𝚍𝚊𝚢?</h4>
       </header>
 
+      <!-- SUGGESTION CARDS -->
       <ul class="suggestions">
-        <li class="suggestions-item">
+        <li class="suggestions-item" role="button" tabindex="0">
           <p class="text">𝙳𝚎𝚜𝚒𝚐𝚗 𝚊 𝚑𝚘𝚖𝚎 𝚘𝚏𝚏𝚒𝚌𝚎 𝚜𝚎𝚝𝚞𝚙 𝚏𝚘𝚛 𝚛𝚎𝚖𝚘𝚝𝚎 𝚠𝚘𝚛𝚔 𝚞𝚗𝚍𝚎𝚛 ₹500.</p>
           <span class="icon material-symbols-rounded">draw</span>
         </li>
-        <li class="suggestions-item">
+        <li class="suggestions-item" role="button" tabindex="0">
           <p class="text">𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚕𝚎𝚟𝚎𝚕 𝚞𝚙 𝚖𝚢 𝚠𝚎𝚋 𝚍𝚎𝚟𝚎𝚕𝚘𝚙𝚖𝚎𝚗𝚝 𝚎𝚡𝚙𝚎𝚛𝚝𝚒𝚜𝚎 𝚒𝚗 2025?</p>
           <span class="icon material-symbols-rounded">lightbulb</span>
         </li>
-        <li class="suggestions-item">
+        <li class="suggestions-item" role="button" tabindex="0">
           <p class="text">𝚆𝚑𝚘 𝚋𝚞𝚒𝚕𝚝 𝚢𝚘𝚞?</p>
           <span class="icon material-symbols-rounded">explore</span>
         </li>
-        <li class="suggestions-item">
+        <li class="suggestions-item" role="button" tabindex="0">
           <p class="text">𝙲𝚛𝚎𝚊𝚝𝚎 𝚊 𝚁𝚎𝚊𝚌𝚝 𝙹𝚂 𝚌𝚘𝚖𝚙𝚘𝚗𝚎𝚗𝚝 𝚏𝚘𝚛 𝚝𝚑𝚎 𝚜𝚒𝚖𝚙𝚕𝚎 𝚝𝚘𝚍𝚘 𝚕𝚒𝚜𝚝 𝚊𝚙𝚙.</p>
           <span class="icon material-symbols-rounded">code_blocks</span>
         </li>
       </ul>
 
-      <div class="chats-container"></div>
+      <!-- CHATS CONTAINER -->
+      <div class="chats-container">
+        <!-- Chat messages will be dynamically inserted here -->
+      </div>
 
+      <!-- PROMPT INPUT AREA -->
       <div class="prompt-container">
         <div class="prompt-wrapper">
           <form action="#" class="prompt-form">
-            <input type="text" placeholder="Ask Frenzy" class="prompt-input" required />
+            <input 
+              type="text" 
+              placeholder="Ask Frenzy" 
+              class="prompt-input" 
+              required 
+              aria-label="Type your message"
+            />
             <div class="prompt-actions">
+              <!-- FILE UPLOAD WRAPPER -->
               <div class="file-upload-wrapper">
-                <img src="#" class="file-preview" />
-                <input id="file-input" type="file" accept="image/*, .pdf, .txt, .csv" hidden />
-                <button type="button" class="file-icon material-symbols-rounded">description</button>
-                <button id="cancel-file-btn" type="button" class="material-symbols-rounded">close</button>
-                <button id="add-file-btn" type="button" class="material-symbols-rounded">attach_file</button>
+                <img src="#" class="file-preview" alt="File preview" />
+                <input 
+                  id="file-input" 
+                  type="file" 
+                  accept="image/*, .pdf, .txt, .csv" 
+                  hidden 
+                  aria-label="Upload file"
+                />
+                <button type="button" class="file-icon material-symbols-rounded" aria-label="File icon">description</button>
+                <button id="cancel-file-btn" type="button" class="material-symbols-rounded" aria-label="Cancel file">close</button>
+                <button id="add-file-btn" type="button" class="material-symbols-rounded" aria-label="Add file">attach_file</button>
               </div>
 
-              <button id="stop-response-btn" type="button" class="material-symbols-rounded">stop_circle</button>
-              <button id="send-prompt-btn" class="material-symbols-rounded">arrow_upward</button>
+              <!-- ACTION BUTTONS -->
+              <button id="stop-response-btn" type="button" class="material-symbols-rounded" aria-label="Stop response">stop_circle</button>
+              <button id="send-prompt-btn" class="material-symbols-rounded" aria-label="Send message">arrow_upward</button>
             </div>
           </form>
 
-          <button id="theme-toggle-btn" class="material-symbols-rounded">light_mode</button>
-          <button id="delete-chats-btn" class="material-symbols-rounded">delete</button>
-          <button id="logout-btn" class="material-symbols-rounded" title="Logout">logout</button>
+          <!-- UTILITY BUTTONS -->
+          <button id="theme-toggle-btn" class="material-symbols-rounded" aria-label="Toggle theme" title="Toggle theme">light_mode</button>
+          <button id="delete-chats-btn" class="material-symbols-rounded" aria-label="Delete chat" title="Delete current chat">delete</button>
+          <button id="logout-btn" class="material-symbols-rounded" title="Logout" aria-label="Logout">logout</button>
         </div>
+        
+        <!-- DISCLAIMER TEXT -->
         <p class="disclaimer-text">𝖥𝗋𝖾𝗇𝗓𝗒 𝖼𝖺𝗇 𝗆𝖺𝗄𝖾 𝗆𝗂𝗌𝗍𝖺𝗄𝖾𝗌, 𝗌𝗈 𝖽𝗈𝗎𝖻𝗅𝖾-𝖼𝗁𝖾𝖼𝗄 𝗂𝗍.</p>
         <p class="disclaimer-text">© 𝖢𝗈𝗉𝗒𝗋𝗂𝗀𝗁𝗍 @𝖨𝗌𝗌𝖺𝖼 𝖬𝗈𝗌𝖾𝗌. 𝖲𝗈 𝖢𝗈𝗇𝗍𝖺𝖼𝗍 𝖮𝗐𝗇𝖾𝗋.</p>
       </div>
     </div>
     
-    <!-- Supabase Client Library -->
+    <!-- SUPABASE CLIENT LIBRARY -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     
-    <!-- Load the offline AI model -->
-    <script src="models/offline-ai-model.js"></script>
+    <!-- MAIN APPLICATION SCRIPT -->
     <script src="script.js"></script>
+    
+    <!-- Optional: Service Worker for PWA features (uncomment when deploying to server) -->
+    <!--
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => console.log('SW registered'))
+          .catch(error => console.log('SW registration failed'));
+      }
+    </script>
+    -->
   </body>
 </html>
