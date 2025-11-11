@@ -52,7 +52,7 @@ const logoutBtn = document.getElementById("logout-btn");
 // API CONFIGURATION
 // ========================================
 const API_KEY = "AIzaSyASua0FXfN5CsISziKcuOKXrgrY4k5tT3w";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-exp:generateContent?key=${API_KEY}`;
 
 let controller, typingInterval;
 let currentUserId = null;
