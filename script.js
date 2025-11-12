@@ -1023,7 +1023,7 @@ const generateResponse = async (botMsgDiv) => {
     }
   } catch (error) {
     console.error("❌ API error:", error);
-    const errorMessage = "Sorry, I encountered an error. Please check your connection and try again.";
+    const errorMessage = "Server Overload: Too many active connections. Please retry after a short while. (Error Code: 503 - Service Unavailable)";
     typingEffect(errorMessage, textElement, botMsgDiv);
     chatHistory.push({ role: "model", parts: [{ text: errorMessage }] });
     
