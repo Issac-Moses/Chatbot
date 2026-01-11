@@ -3,7 +3,7 @@
 This is a basic web-based chatbot built using **HTML**, **CSS**, and **JavaScript**. It simulates a simple conversation flow and can be used as a foundation for more advanced chatbot features.
 ## 🌐 Live Demo
 
-[Click here to view it live](https://issac-moses-chatbot.netlify.app/)
+[Click here to view it live](https://frenzy-chatbot.netlify.app/)
 
 ## 😴 Demo Screen Shots
 ![](/Screenshots/Interface.jpg)
